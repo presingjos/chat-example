@@ -1,0 +1,152 @@
+#!/usr/bin/env node
+
+/**
+ * Module dependencies.
+ */
+
+const app = require('../app')
+const logger = require('../logger')
+const debug = require('debug')('joe-chat:server')
+const http = require('http')
+const socket = require('socket.io')
+
+/**
+ * Get port from environment and store in Express.
+ */
+
+var port = process.env.PORT || 5000
+app.set('port', port)
+
+/**
+ * Create HTTP server.
+ */
+var server = http.createServer(app)
+let io = socket(server)
+
+/**
+ * Listen on provided port, on all network interfaces.
+ */
+server.listen(port)
+server.on('error', onError)
+server.on('listening', onListening)
+
+let numUsers = 0
+
+// Handle incoming connections from clients
+io.sockets.on('connection', (socket) => {
+  let addedUser = false
+
+  // When we get a 'connection' we also expect a 'room' message
+  // to tell us which chatroom to subscribe to.
+  logger.basicLog.info(`Connection made on: ${socket.id}`)
+  socket.on('room', (room) => {
+    logger.basicLog.info(`${socket.id} joined room: ${room}`)
+    socket.join(room)
+    // if (addedUser) return
+    // ++numUsers
+    // addedUser = true
+    // socket.to(room).emit('users', {
+    //   numUsers: numUsers
+    // })
+  })
+
+  socket.on('user added', (room) => {
+    console.log(room)
+    ++numUsers
+    socket.to(room).emit('users', {users: numUsers})
+  })
+
+  socket.on('disconnect', () => {
+    if (addedUser) {
+      --numUsers
+      socket.broadcast.emit('user change', {
+        numUsers: numUsers
+      })
+    }
+  })
+
+  // socket.broadcast.emit('user joined', {
+  //     username: socket.username,
+  //     numUsers: numUsers
+  // })
+
+  // socket.on('typing', () => {
+  //   socket.broadcast.emit('typing', {
+  //     username: socket.username
+  //   })
+  // })
+
+  // socket.on('stop typing', () => {
+  //   socket.broadcast.emit('stop typing', {
+  //     username: socket.username
+  //   })
+  // })
+
+  // When a user emits a 'chat' broadcast the message to other users
+  // that are in the same room
+  socket.on('chat', (room, message) => {
+    console.log(message)
+    logger.basicLog.info(`${socket.id} sent message to room: ${room}`)
+    socket.broadcast.to(room).emit('chat', message)
+  })
+})
+
+/**
+ * Normalize a port into a number, string, or false.
+ */
+
+function normalizePort (val) {
+  var port = parseInt(val, 10)
+
+  if (isNaN(port)) {
+    // named pipe
+    return val
+  }
+
+  if (port >= 0) {
+    // port number
+    return port
+  }
+
+  return false
+}
+
+/**
+ * Event listener for HTTP server "error" event.
+ */
+
+function onError (error) {
+  if (error.syscall !== 'listen') {
+    throw error
+  }
+
+  var bind = typeof port === 'string'
+    ? 'Pipe ' + port
+    : 'Port ' + port
+
+  // handle specific listen errors with friendly messages
+  switch (error.code) {
+    case 'EACCES':
+      console.error(bind + ' requires elevated privileges')
+      process.exit(1)
+      break
+    case 'EADDRINUSE':
+      console.error(bind + ' is already in use')
+      process.exit(1)
+      break
+    default:
+      throw error
+  }
+}
+
+/**
+ * Event listener for HTTP server "listening" event.
+ */
+
+function onListening () {
+  var addr = server.address()
+  var bind = typeof addr === 'string'
+    ? 'pipe ' + addr
+    : 'port ' + addr.port
+  debug('Listening on ' + bind)
+}
