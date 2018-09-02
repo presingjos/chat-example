@@ -94,7 +94,8 @@ class ChatRoom extends React.Component {
   }
 
   render () {
-    let imageDir = path.join("https://infinite-ridge-28020.herokuapp.com/", 'images', 'background2.jpg')
+    let imageDir = path.join('images', 'background2.jpg')
+    imageDir = 'https://nameless-river-14287.herokuapp.com/' + imageDir
     return (
       <div className='parallax' style={{backgroundImage: `url('${imageDir}')`}}>
         <div className='chatroom w3-display-middle rounded' >

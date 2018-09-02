@@ -172,10 +172,8 @@ class HomePage extends React.Component {
   }
 
   render () {
-    let imageDir = path.join("https://infinite-ridge-28020.herokuapp.com/", 'images', 'background.jpg')
+    let imageDir = path.join(proxyDomain.proxy, 'images', 'background.jpg')
 
-    console.log('Here')
-    console.log(imageDir)
     return (
       <div className='App'>
 
